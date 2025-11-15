@@ -6,6 +6,30 @@ https://claude.ai/public/artifacts/1837062d-de51-491a-83c7-5b8a589fc653
 AI 기반 HTP(House-Tree-Person) 심리 검사 해석 서비스입니다. 
 그림을 그리거나 업로드하면 AI가 심리 상태를 분석하고, 대화형 인터페이스로 추가 정보를 수집하여 개인화된 해석을 제공합니다.
 
+## 🔍 HTP 검사란?
+
+HTP(House-Tree-Person) 검사는 대표적인 투사적 심리검사입니다.
+- **집**: 가정 환경, 안정감, 대인관계
+- **나무**: 성장 과정, 생명력, 무의식
+- **사람**: 자아상, 성격 특성, 대인관계
+
+## 📋 사용 방법
+
+1. **그림 그리기**
+   - 집, 나무, 사람 탭을 선택
+   - 브러시 크기와 색상을 조절
+   - 캔버스에 자유롭게 그림 그리기
+   - 또는 이미지 업로드
+
+2. **검사 진행**
+   - "다음" 버튼 클릭 (최소 1개 그림 필요)
+   - AI의 질문에 답변 (5개)
+   - 자동으로 최종 해석 생성
+
+3. **결과 확인 및 상담**
+   - 개별 해석과 최종 결과 확인
+   - 궁금한 점을 채팅으로 질문
+
 ## ✨ 주요 기능
 
 ### 1. 그림 입력
@@ -37,6 +61,18 @@ AI 기반 HTP(House-Tree-Person) 심리 검사 해석 서비스입니다.
 - 대화형 추가 정보 수집 (5개 질문)
 - 최종 종합 해석
 - 지속적인 채팅 상담
+
+### 환경 설정
+- Anthropic API 키는 별도 설정 불필요 (Claude.ai artifact 환경에서 자동 제공)
+- 외부 환경에서 사용 시 API 키 설정 필요
+
+## 🛠️ 기술 스택
+
+- **Frontend**: React 18+
+- **UI 라이브러리**: Tailwind CSS
+- **아이콘**: Lucide React
+- **AI 모델**: Claude Sonnet 4 (Anthropic)
+- **Canvas API**: HTML5 Canvas (그림 그리기)
 
 
 <img width="739" height="868" alt="image" src="https://github.com/user-attachments/assets/16102164-56c3-44ff-be72-0f7565370ef9" />
