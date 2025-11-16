@@ -1,5 +1,5 @@
 # web
-https://claude.ai/public/artifacts/1837062d-de51-491a-83c7-5b8a589fc653
+https://claude.ai/public/artifacts/4ae9c9ee-1f41-4fd1-8774-d893298581a2
 
 # 챗쪽이 - HTP 심리 검사 해석 챗봇 🎨🧠
 
@@ -74,16 +74,8 @@ HTP(House-Tree-Person) 검사는 대표적인 투사적 심리검사입니다.
 - **AI 모델**: Claude Sonnet 4 (Anthropic)
 - **Canvas API**: HTML5 Canvas (그림 그리기)
 
+<img width="1397" height="865" alt="image" src="https://github.com/user-attachments/assets/46b32abc-2d6f-4b7c-9342-b288358d5f30" />
 
-<img width="739" height="868" alt="image" src="https://github.com/user-attachments/assets/16102164-56c3-44ff-be72-0f7565370ef9" />
+<img width="1381" height="860" alt="image" src="https://github.com/user-attachments/assets/2784c417-bbd8-433f-9c78-522f6a288903" />
 
-<img width="911" height="802" alt="image" src="https://github.com/user-attachments/assets/3258e382-daac-44c6-ad51-30a01ecc2cb9" />
-
-<img width="875" height="617" alt="image" src="https://github.com/user-attachments/assets/dd2e5b1f-a506-4ae1-a2d1-90b3620804d8" />
-
-<img width="910" height="654" alt="image" src="https://github.com/user-attachments/assets/05c400f6-12a7-4635-a73c-32e69aa0cbfb" />
-
-<img width="896" height="640" alt="image" src="https://github.com/user-attachments/assets/fcaf1a3f-2e1b-4d31-b648-00bbd041c282" />
-
-<img width="774" height="626" alt="image" src="https://github.com/user-attachments/assets/6c530dec-a2b6-4f35-8b37-3a67f8353ed5" />
 
