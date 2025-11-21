@@ -107,6 +107,9 @@ HTP 검사 해석과 관련된 내용을 따뜻하게 설명해주세요.`}`
   };import React, { useState, useRef, useEffect } from 'react';
 import { Upload, MessageCircle, Eraser, Pencil } from 'lucide-react';
 
+// 로컬 서버 API URL
+const API_BASE_URL = 'http://localhost:8000';
+
 const HTPChatbot = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState('house');
@@ -236,94 +239,65 @@ const HTPChatbot = () => {
   const getInterpretation = async () => {
     setIsLoading(true);
     
-    const imageContents = [];
-    const descriptions = [];
-    
-    if (drawings.house) {
-      imageContents.push({
-        type: "image",
-        source: {
-          type: "base64",
-          media_type: "image/png",
-          data: drawings.house.split(',')[1]
-        }
-      });
-      descriptions.push("집 그림");
-    }
-    if (drawings.tree) {
-      imageContents.push({
-        type: "image",
-        source: {
-          type: "base64",
-          media_type: "image/png",
-          data: drawings.tree.split(',')[1]
-        }
-      });
-      descriptions.push("나무 그림");
-    }
-    if (drawings.person) {
-      imageContents.push({
-        type: "image",
-        source: {
-          type: "base64",
-          media_type: "image/png",
-          data: drawings.person.split(',')[1]
-        }
-      });
-      descriptions.push("사람 그림");
-    }
-
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      console.log("🚀 서버 요청 시작:", `${API_BASE_URL}/interpret-multiple-images`);
+      console.log("📦 전송 데이터:", {
+        house: drawings.house ? `${drawings.house.substring(0, 50)}...` : null,
+        tree: drawings.tree ? `${drawings.tree.substring(0, 50)}...` : null,
+        person: drawings.person ? `${drawings.person.substring(0, 50)}...` : null
+      });
+
+      // 먼저 서버 상태 확인
+      try {
+        const healthCheck = await fetch(`${API_BASE_URL}/`, {
+          method: "GET",
+          mode: 'cors',
+        });
+        console.log("✅ 서버 상태:", healthCheck.status);
+      } catch (healthError) {
+        console.error("❌ 서버 연결 실패:", healthError);
+        throw new Error("서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.");
+      }
+
+      // 로컬 서버 API로 멀티 이미지 해석 요청
+      const response = await fetch(`${API_BASE_URL}/interpret-multiple-images`, {
         method: "POST",
+        mode: 'cors',
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          messages: [
-            {
-              role: "user",
-              content: [
-                ...imageContents,
-                {
-                  type: "text",
-                  text: `당신은 전문 심리상담사입니다. HTP(House-Tree-Person) 검사를 진행하고 있습니다.
-
-제공된 그림: ${descriptions.join(', ')}
-
-그림을 분석하여 더 정확한 해석을 위해 필요한 추가 정보 1가지만 질문해주세요.
-
-먼저 검사자의 기본 정보(나이, 성별 등)를 물어보고, 그 다음 그림에 대한 구체적인 질문을 해주세요.
-HTP 검사는 연령대, 성별, 생활 환경에 따라 해석이 달라질 수 있습니다.
-
-질문은 구체적이고 명확하게, 친근한 말투로 해주세요.
-
-예시 질문:
-- "먼저, 나이와 성별을 알려주실 수 있나요?"
-- "이 집에는 몇 명이 살고 있나요?"
-- "나무의 나이는 몇 살 정도로 생각하시나요?"
-- "그린 사람은 무엇을 하고 있는 중인가요?"
-
-질문만 작성해주세요.`
-                }
-              ]
-            }
-          ],
+          house: drawings.house || null,
+          tree: drawings.tree || null,
+          person: drawings.person || null
         })
       });
 
+      console.log("📥 서버 응답 상태:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ 서버 오류 응답:", errorText);
+        throw new Error(`서버 응답 오류: ${response.status} - ${errorText}`);
+      }
+
       const data = await response.json();
-      const question = data.content
-        .filter(item => item.type === "text")
-        .map(item => item.text)
-        .join("\n");
+      console.log("✅ 서버 응답 데이터:", data);
       
-      setMessages([{ role: 'assistant', content: question }]);
+      // 종합 해석을 interpretation에 저장
+      setInterpretation(data.combined_interpretation);
+      
+      // 첫 질문 생성
+      const initialQuestion = `안녕하세요! 그림을 분석했습니다. 더 정확한 해석을 위해 몇 가지 질문을 드리겠습니다.\n\n먼저, 나이와 성별을 알려주실 수 있나요?`;
+      
+      setMessages([{ role: 'assistant', content: initialQuestion }]);
       setQuestionCount(1);
     } catch (error) {
-      setMessages([{ role: 'assistant', content: "질문을 생성하는 중 오류가 발생했습니다. 다시 시도해주세요." }]);
+      console.error("❌ 전체 오류:", error);
+      setMessages([{ 
+        role: 'assistant', 
+        content: `챗봇 화면에서 오류가 발생했습니다: ${error.message}\n\n해결 방법:\n1. 서버가 실행 중인지 확인 (http://localhost:8000)\n2. 브라우저 콘솔(F12)에서 상세 오류 확인\n3. 서버 터미널에서 오류 로그 확인` 
+      }]);
     }
     
     setIsLoading(false);

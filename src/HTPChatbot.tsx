@@ -4,7 +4,47 @@ import { Upload, MessageCircle, Eraser, Pencil } from 'lucide-react';
 // 로컬 RAG API 설정
 const LOCAL_API_URL = 'http://localhost:8000';
 
-// 로컬 API 호출 함수
+// 이미지 해석 API 호출 함수
+const interpretImage = async (imageBase64: string, drawingType: string) => {
+  console.log(`📡 API 호출 시작: ${drawingType} 그림`);
+  console.log(`🔗 URL: ${LOCAL_API_URL}/interpret-image`);
+  
+  try {
+    const response = await fetch(`${LOCAL_API_URL}/interpret-image`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        image: imageBase64,
+        drawing_type: drawingType
+      })
+    });
+
+    console.log(`📊 응답 상태: ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ API 에러 응답:`, errorText);
+      throw new Error(`이미지 해석 실패: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log(`✅ 해석 완료:`, data);
+    
+    return {
+      caption: data.caption,
+      interpretation: data.interpretation,
+      queries: data.rewritten_queries,
+      sources: data.source_documents
+    };
+  } catch (error) {
+    console.error(`💥 interpretImage 에러 (${drawingType}):`, error);
+    throw error;
+  }
+};
+
+// 로컬 API 호출 함수 (채팅용)
 const callLocalRAG = async (message: string, sessionId: string = 'default') => {
   const response = await fetch(`${LOCAL_API_URL}/chat`, {
     method: 'POST',
@@ -210,32 +250,69 @@ const HTPChatbot = () => {
     }
 
     try {
-      // 개별 그림 해석 (로컬 RAG 사용)
+      // 개별 그림 해석 (이미지 해석 API 사용)
+      console.log('🎨 그림 해석 시작...');
+      console.log('📊 그림 상태:', {
+        house: !!drawings.house,
+        tree: !!drawings.tree,
+        person: !!drawings.person
+      });
+      
       if (drawings.house) {
-        const houseText = await callLocalRAG("이 집 그림을 HTP 검사 관점에서 간단히 해석해주세요. 2-3문장으로 주요 특징만 설명해주세요.");
-        setHouseInterpretation(houseText);
+        console.log('🏠 집 그림 해석 중...');
+        try {
+          const result = await interpretImage(drawings.house, 'house');
+          console.log('집 캡션:', result.caption);
+          setHouseInterpretation(result.interpretation);
+        } catch (error) {
+          console.error('❌ 집 그림 해석 실패:', error);
+          throw error;
+        }
       }
 
       if (drawings.tree) {
-        const treeText = await callLocalRAG("이 나무 그림을 HTP 검사 관점에서 간단히 해석해주세요. 2-3문장으로 주요 특징만 설명해주세요.");
-        setTreeInterpretation(treeText);
+        console.log('🌳 나무 그림 해석 중...');
+        try {
+          const result = await interpretImage(drawings.tree, 'tree');
+          console.log('나무 캡션:', result.caption);
+          setTreeInterpretation(result.interpretation);
+        } catch (error) {
+          console.error('❌ 나무 그림 해석 실패:', error);
+          throw error;
+        }
       }
 
       if (drawings.person) {
-        const personText = await callLocalRAG("이 사람 그림을 HTP 검사 관점에서 간단히 해석해주세요. 2-3문장으로 주요 특징만 설명해주세요.");
-        setPersonInterpretation(personText);
+        console.log('👤 사람 그림 해석 중...');
+        try {
+          const result = await interpretImage(drawings.person, 'person');
+          console.log('사람 캡션:', result.caption);
+          setPersonInterpretation(result.interpretation);
+        } catch (error) {
+          console.error('❌ 사람 그림 해석 실패:', error);
+          throw error;
+        }
       }
+      
+      console.log('✅ 모든 그림 해석 완료!');
 
       // 첫 질문 생성 (로컬 RAG 사용)
+      console.log('💬 첫 질문 생성 시작...');
       const question = await callLocalRAG(`HTP 검사를 위해 추가 정보가 필요합니다. 
 첫 번째 질문으로 검사자의 나이를 물어보세요.
 친근한 말투로 질문만 작성해주세요.`);
       
+      console.log('✅ 질문 생성 완료:', question);
       setMessages([{ role: 'assistant', content: question }]);
       setQuestionCount(1);
     } catch (error) {
-      console.error(error);
-      setMessages([{ role: 'assistant', content: "질문을 생성하는 중 오류가 발생했습니다." }]);
+      console.error('💥 analyzeDrawings 전체 에러:', error);
+      console.error('에러 상세:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      setMessages([{ role: 'assistant', content: `오류가 발생했습니다: ${error.message}` }]);
     }
     
     setIsLoading(false);
