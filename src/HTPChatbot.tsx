@@ -1,6 +1,30 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Upload, MessageCircle, Eraser, Pencil } from 'lucide-react';
 
+// 로컬 RAG API 설정
+const LOCAL_API_URL = 'http://localhost:8000';
+
+// 로컬 API 호출 함수
+const callLocalRAG = async (message: string, sessionId: string = 'default') => {
+  const response = await fetch(`${LOCAL_API_URL}/chat`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message: message,
+      session_id: sessionId
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`API 호출 실패: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.response;
+};
+
 const HTPChatbot = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState('house');
@@ -186,137 +210,26 @@ const HTPChatbot = () => {
     }
 
     try {
-      // 개별 그림 해석
+      // 개별 그림 해석 (로컬 RAG 사용)
       if (drawings.house) {
-        const houseResponse = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 500,
-            messages: [
-              {
-                role: "user",
-                content: [
-                  {
-                    type: "image",
-                    source: {
-                      type: "base64",
-                      media_type: "image/png",
-                      data: drawings.house.split(',')[1]
-                    }
-                  },
-                  {
-                    type: "text",
-                    text: "이 집 그림을 HTP 검사 관점에서 간단히 해석해주세요. 2-3문장으로 주요 특징만 설명해주세요."
-                  }
-                ]
-              }
-            ],
-          })
-        });
-        const houseData = await houseResponse.json();
-        setHouseInterpretation(houseData.content[0].text);
+        const houseText = await callLocalRAG("이 집 그림을 HTP 검사 관점에서 간단히 해석해주세요. 2-3문장으로 주요 특징만 설명해주세요.");
+        setHouseInterpretation(houseText);
       }
 
       if (drawings.tree) {
-        const treeResponse = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 500,
-            messages: [
-              {
-                role: "user",
-                content: [
-                  {
-                    type: "image",
-                    source: {
-                      type: "base64",
-                      media_type: "image/png",
-                      data: drawings.tree.split(',')[1]
-                    }
-                  },
-                  {
-                    type: "text",
-                    text: "이 나무 그림을 HTP 검사 관점에서 간단히 해석해주세요. 2-3문장으로 주요 특징만 설명해주세요."
-                  }
-                ]
-              }
-            ],
-          })
-        });
-        const treeData = await treeResponse.json();
-        setTreeInterpretation(treeData.content[0].text);
+        const treeText = await callLocalRAG("이 나무 그림을 HTP 검사 관점에서 간단히 해석해주세요. 2-3문장으로 주요 특징만 설명해주세요.");
+        setTreeInterpretation(treeText);
       }
 
       if (drawings.person) {
-        const personResponse = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 500,
-            messages: [
-              {
-                role: "user",
-                content: [
-                  {
-                    type: "image",
-                    source: {
-                      type: "base64",
-                      media_type: "image/png",
-                      data: drawings.person.split(',')[1]
-                    }
-                  },
-                  {
-                    type: "text",
-                    text: "이 사람 그림을 HTP 검사 관점에서 간단히 해석해주세요. 2-3문장으로 주요 특징만 설명해주세요."
-                  }
-                ]
-              }
-            ],
-          })
-        });
-        const personData = await personResponse.json();
-        setPersonInterpretation(personData.content[0].text);
+        const personText = await callLocalRAG("이 사람 그림을 HTP 검사 관점에서 간단히 해석해주세요. 2-3문장으로 주요 특징만 설명해주세요.");
+        setPersonInterpretation(personText);
       }
 
-      // 첫 질문 생성
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 500,
-          messages: [
-            {
-              role: "user",
-              content: [
-                ...imageContents,
-                {
-                  type: "text",
-                  text: `HTP 검사를 위해 추가 정보가 필요합니다. 
+      // 첫 질문 생성 (로컬 RAG 사용)
+      const question = await callLocalRAG(`HTP 검사를 위해 추가 정보가 필요합니다. 
 첫 번째 질문으로 검사자의 나이를 물어보세요.
-친근한 말투로 질문만 작성해주세요.`
-                }
-              ]
-            }
-          ],
-        })
-      });
-
-      const data = await response.json();
-      const question = data.content[0].text;
+친근한 말투로 질문만 작성해주세요.`);
       
       setMessages([{ role: 'assistant', content: question }]);
       setQuestionCount(1);
@@ -345,23 +258,16 @@ const HTPChatbot = () => {
     conversationHistory.push({ role: "user", content: userMessage });
 
     try {
-      // 최종 해석이 완료된 후의 대화
+      // 최종 해석이 완료된 후의 대화 (로컬 RAG 사용)
       if (isComplete) {
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 1000,
-            messages: conversationHistory,
-            system: "당신은 친근하고 공감적인 심리상담사입니다. HTP 검사 결과에 대한 사용자의 질문에 따뜻하고 전문적으로 답변해주세요."
-          })
-        });
-
-        const data = await response.json();
-        const assistantMessage = data.content[0].text;
+        const conversationContext = conversationHistory.map(msg => 
+          `${msg.role === 'user' ? '사용자' : '상담사'}: ${msg.content}`
+        ).join('\n');
+        
+        const assistantMessage = await callLocalRAG(
+          `당신은 친근하고 공감적인 심리상담사입니다. HTP 검사 결과에 대한 사용자의 질문에 따뜻하고 전문적으로 답변해주세요.\n\n대화 내역:\n${conversationContext}`
+        );
+        
         setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
         setIsLoading(false);
         return;
@@ -371,59 +277,16 @@ const HTPChatbot = () => {
       const newQuestionCount = questionCount + 1;
       const shouldFinalize = newQuestionCount > 5;
 
-      const imageContents = [];
-      if (drawings.house) {
-        imageContents.push({
-          type: "image",
-          source: {
-            type: "base64",
-            media_type: "image/png",
-            data: drawings.house.split(',')[1]
-          }
-        });
-      }
-      if (drawings.tree) {
-        imageContents.push({
-          type: "image",
-          source: {
-            type: "base64",
-            media_type: "image/png",
-            data: drawings.tree.split(',')[1]
-          }
-        });
-      }
-      if (drawings.person) {
-        imageContents.push({
-          type: "image",
-          source: {
-            type: "base64",
-            media_type: "image/png",
-            data: drawings.person.split(',')[1]
-          }
-        });
-      }
-
       if (shouldFinalize) {
-        // 최종 해석 생성
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 1500,
-            messages: [
-              {
-                role: "user",
-                content: [
-                  ...imageContents,
-                  {
-                    type: "text",
-                    text: `당신은 전문 심리상담사입니다. HTP 검사의 최종 해석을 작성해주세요.
+        // 최종 해석 생성 (로컬 RAG 사용)
+        const conversationContext = conversationHistory.map(msg => 
+          `${msg.role === 'user' ? '사용자' : '상담사'}: ${msg.content}`
+        ).join('\n');
+        
+        const finalText = await callLocalRAG(`당신은 전문 심리상담사입니다. HTP 검사의 최종 해석을 작성해주세요.
 
 지금까지의 대화:
-${conversationHistory.map(msg => `${msg.role === 'user' ? '사용자' : '상담사'}: ${msg.content}`).join('\n')}
+${conversationContext}
 
 수집한 정보를 바탕으로 종합적인 HTP 검사 해석을 제공해주세요.
 
@@ -433,16 +296,8 @@ ${conversationHistory.map(msg => `${msg.role === 'user' ? '사용자' : '상담�
 3. 심리적 상태와 특성
 4. 긍정적인 측면과 발전 방향
 
-따뜻하고 공감적인 말투로 4-5문단으로 작성해주세요.`
-                  }
-                ]
-              }
-            ],
-          })
-        });
-
-        const data = await response.json();
-        const finalText = data.content[0].text;
+따뜻하고 공감적인 말투로 4-5문단으로 작성해주세요.`);
+        
         setFinalInterpretation(finalText);
         setIsComplete(true);
         setMessages(prev => [...prev, { 
@@ -450,42 +305,23 @@ ${conversationHistory.map(msg => `${msg.role === 'user' ? '사용자' : '상담�
           content: "최종 해석이 완성되었습니다! 위의 '최종 결과' 섹션을 확인해주세요. 추가로 궁금한 점이 있으시면 언제든 물어보세요." 
         }]);
       } else {
-        // 추가 질문 생성
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 500,
-            messages: [
-              {
-                role: "user",
-                content: [
-                  ...imageContents,
-                  {
-                    type: "text",
-                    text: `HTP 검사를 위한 추가 정보 수집 중입니다. (${newQuestionCount}/5)
+        // 추가 질문 생성 (로컬 RAG 사용)
+        const conversationContext = conversationHistory.map(msg => 
+          `${msg.role === 'user' ? '사용자' : '상담사'}: ${msg.content}`
+        ).join('\n');
+        
+        const question = await callLocalRAG(`HTP 검사를 위한 추가 정보 수집 중입니다. (${newQuestionCount}/5)
 
 지금까지의 대화:
-${conversationHistory.map(msg => `${msg.role === 'user' ? '사용자' : '상담사'}: ${msg.content}`).join('\n')}
+${conversationContext}
 
 다음 질문을 위한 가이드:
 ${newQuestionCount === 1 ? '- 성별이나 현재 상황(학생/직장인 등)을 물어보세요.' : ''}
 ${newQuestionCount === 2 ? '- 최근 기분이나 감정 상태를 물어보세요.' : ''}
 ${newQuestionCount >= 3 ? '- 그림의 구체적인 요소(색상 선택 이유, 특정 부분에 대한 설명 등)를 물어보세요.' : ''}
 
-친근한 말투로 질문 1개만 작성해주세요.`
-                  }
-                ]
-              }
-            ],
-          })
-        });
-
-        const data = await response.json();
-        const question = data.content[0].text;
+친근한 말투로 질문 1개만 작성해주세요.`);
+        
         setMessages(prev => [...prev, { role: 'assistant', content: question }]);
         setQuestionCount(newQuestionCount);
       }
